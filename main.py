@@ -2,17 +2,17 @@ __author__ = 'Morten'
 from PIL import Image
 from PIL import ExifTags
 import PIL
-import os, shutil, hashlib
+import os, shutil, hashlib, time
 
 #Folder to start search from:
-root_folder = "/Volumes/Tellling/Billeder"
+root_folder = "/Users/Morten/Desktop/Test"
 #Folder to place Photos folder:
 dest_folder = "/Users/Morten/Desktop/"
 #Picture minimum size:
 min_width = 500
 min_height = 500
 #Prepare hash list for detecting duplicates:
-hash_list = []
+hash_list = {}
 
 def set_dir():
     try:
@@ -50,10 +50,10 @@ def check_duplicates(image):
     global hash_list
     img = open(image).read()
     hash = hashlib.md5(img).hexdigest()
-    if hash in hash_list:
+    if hash_list.has_key(hash):
         return False
     else:
-        hash_list.append(hash)
+        hash_list[hash] = True
         return True
 
 
@@ -91,8 +91,8 @@ def error_image(image_path, count):
     except:
         print "Error moving image", image_path
 
-
 def main():
+    set_dir()
     count = 0
     error_count = 0
     for (dirname, dirs, files) in os.walk('.'):
@@ -101,16 +101,13 @@ def main():
                 tmp_path = os.path.join(dirname, filename)
                 if check_size(tmp_path) and check_duplicates(tmp_path):
                     try:
-                        count += 1
                         move_image(tmp_path, count)
+                        count += 1
                     except:
-                        error_count += 1
                         print tmp_path, "raised error"
                         error_image(tmp_path, error_count)
-    print hash_list
+                        error_count += 1
     print count, "images were found and copied to the right directory"
     print error_count, "errors were raised and moved to the errors folder"
 
-
-set_dir()
 main()

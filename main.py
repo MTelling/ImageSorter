@@ -4,10 +4,8 @@ from PIL import ExifTags
 import PIL
 import os, shutil, hashlib, time
 
-#TODO: Currently opens the image 3 times. This could be cut down to 1. 
-
 #Folder to start search from:
-root_folder = "/Users/Morten/Desktop/Test"
+root_folder = "/Users/Morten/Downloads"
 #Folder to place Photos folder:
 dest_folder = "/Users/Morten/Desktop/"
 #Picture minimum size:
@@ -29,11 +27,14 @@ def set_dir():
         print e
 
 def get_exif(img):
-    exif = {
-        PIL.ExifTags.TAGS[k]: v
-        for k, v in img._getexif().items()
-        if k in PIL.ExifTags.TAGS
-    }
+    try:
+        exif = {
+            PIL.ExifTags.TAGS[k]: v
+            for k, v in img._getexif().items()
+            if k in PIL.ExifTags.TAGS
+        }
+    except:
+        exif = {"Model":"No Exif"}
 
     return exif
 
@@ -76,8 +77,10 @@ def check_size(img):
 
 
 def check_duplicates(image):
+    #TODO: Do these need to be specified global? 
     global hash_dict
     global duplicates
+    #TODO: should it really only read 10000? 
     img = open(image).read(10000)
     hash = hashlib.md5(img).hexdigest()
     if hash_dict.has_key(hash):

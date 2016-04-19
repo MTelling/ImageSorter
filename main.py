@@ -4,6 +4,8 @@ from PIL import ExifTags
 import PIL
 import os, shutil, hashlib, time
 
+#TODO: Currently opens the image 3 times. This could be cut down to 1. 
+
 #Folder to start search from:
 root_folder = "/Users/Morten/Desktop/Test"
 #Folder to place Photos folder:
@@ -24,8 +26,7 @@ def set_dir():
     except OSError as e:
         print e
 
-def get_exif(imagepath):
-    img = Image.open(imagepath)
+def get_exif(img):
     exif = {
         PIL.ExifTags.TAGS[k]: v
         for k, v in img._getexif().items()
@@ -57,9 +58,8 @@ def check_camera_type(exif):
     if not cameras.has_key(model):
         cameras[model] = (make, lens_model)
 
-def check_size(image):
+def check_size(img):
     try:
-        img = Image.open(image)
         width = img.size[0]
         height = img.size[1]
         if width > min_width and height > min_height:
@@ -90,11 +90,9 @@ def make_dir(folder_path):
         None
 
 
-def move_image(image_path, count):
-    exif = get_exif(image_path)
+def move_image(image_path, count, exif):
 
-    check_camera_type(exif)
-    
+
     #Get year and month from exif
     year = get_year_month(exif)[0]
     month = get_year_month(exif)[1]
@@ -109,11 +107,13 @@ def move_image(image_path, count):
         print "Error moving image", image_path
 
 
-def error_image(image_path, count):
+def handle_error(image_path, count):
     #Set path to error folder
     path = dest_folder + "Photos/Errors"
-    #Make error folder. If already exists go to next
+    
+    #Make error folder.
     make_dir(path)
+
     #Move image to related path
     try:
         shutil.copyfile(image_path, path + "/img_" + str(count) + ".jpg")
@@ -126,6 +126,7 @@ def is_allowed_filetype(filename):
 
 
 def main():
+    start = time.time()
     set_dir()
     count = 0
     error_count = 0
@@ -133,17 +134,22 @@ def main():
         for filename in files:
             if is_allowed_filetype(filename):
                 tmp_path = os.path.join(dirname, filename)
-                if check_size(tmp_path) and check_duplicates(tmp_path):
+                img = Image.open(tmp_path)
+                exif = get_exif(img)
+
+                if check_size(img) and check_duplicates(tmp_path):
+                    check_camera_type(exif)
                     try:
-                        move_image(tmp_path, count)
+                        move_image(tmp_path, count, exif)
                         count += 1
                     except:
                         print tmp_path, "raised error"
-                        error_image(tmp_path, error_count)
+                        handle_error(tmp_path, error_count)
                         error_count += 1
     print count, "images were found and copied to the right directory"
     print error_count, "errors were raised and moved to the errors folder"
     print cameras
+    print time.time() - start
 
 
 main()

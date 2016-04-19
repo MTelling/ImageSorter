@@ -58,6 +58,8 @@ def check_camera_type(exif):
     if not cameras.has_key(model):
         cameras[model] = (make, lens_model)
 
+    return model
+
 def check_size(img):
     try:
         width = img.size[0]
@@ -90,14 +92,12 @@ def make_dir(folder_path):
         None
 
 
-def move_image(image_path, count, exif):
-
-
+def move_image(image_path, camera_type, count, exif):
     #Get year and month from exif
     year = get_year_month(exif)[0]
     month = get_year_month(exif)[1]
     #Make path from year and month
-    path = dest_folder + "Photos/" + str(year) + "/" + str(month)
+    path = dest_folder + "Photos/" + camera_type + "/" + str(year) + "/" + str(month)
     #Make folders in path - returns none if already exists
     make_dir(path)
     #Move image to related path
@@ -138,9 +138,9 @@ def main():
                 exif = get_exif(img)
 
                 if check_size(img) and check_duplicates(tmp_path):
-                    check_camera_type(exif)
+                    camera_type = check_camera_type(exif)
                     try:
-                        move_image(tmp_path, count, exif)
+                        move_image(tmp_path, camera_type, count, exif)
                         count += 1
                     except:
                         print tmp_path, "raised error"

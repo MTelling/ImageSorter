@@ -19,6 +19,8 @@ hash_dict = {}
 cameras = {}
 #Prepare allowed types
 allowed_types = {"jpg":True}
+#Count duplicates
+duplicates = 0
 
 def set_dir():
     try:
@@ -75,9 +77,11 @@ def check_size(img):
 
 def check_duplicates(image):
     global hash_dict
-    img = open(image).read()
+    global duplicates
+    img = open(image).read(10000)
     hash = hashlib.md5(img).hexdigest()
     if hash_dict.has_key(hash):
+        duplicates += 1
         return False
     else:
         hash_dict[hash] = True
@@ -148,8 +152,8 @@ def main():
                         error_count += 1
     print count, "images were found and copied to the right directory"
     print error_count, "errors were raised and moved to the errors folder"
-    print cameras
-    print time.time() - start
+    print duplicates, "duplicates were found"
+    print "Exuction time", time.time() - start
 
 
 main()

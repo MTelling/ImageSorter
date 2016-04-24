@@ -5,7 +5,7 @@ import PIL
 import os, shutil, hashlib, time
 
 #Folder to start search from:
-root_folder = "/Users/Morten/Downloads"
+root_folder = "/Users/Morten/"
 #Folder to place Photos folder:
 dest_folder = "/Users/Morten/Desktop/"
 #Picture minimum size:
@@ -16,11 +16,11 @@ hash_dict = {}
 #Prepare camera dict
 cameras = {}
 #Prepare allowed types
-allowed_types = {"jpg":True}
+allowed_types = ["jpg"]
 #Count duplicates
 duplicates = 0
 
-def set_dir():
+def set_dir(root_folder = root_folder):
     try:
         os.chdir(root_folder)
     except OSError as e:
@@ -104,7 +104,7 @@ def move_image(image_path, camera_type, count, exif):
     year = get_year_month(exif)[0]
     month = get_year_month(exif)[1]
     #Make path from year and month
-    path = dest_folder + "Photos/" + camera_type + "/" + str(year) + "/" + str(month)
+    path = ''.join([dest_folder , "Photos/" , camera_type , "/" , str(year) , "/" , str(month)])
     #Make folders in path - returns none if already exists
     make_dir(path)
     #Move image to related path
@@ -129,34 +129,64 @@ def handle_error(image_path, count):
 
 def is_allowed_filetype(filename):
     filetype = filename.lower().split('.')
-    return allowed_types.has_key(filetype[len(filetype) - 1])
+    return (filetype[len(filetype) - 1] in allowed_types)
 
 
-def main():
+def run(root_folder = root_folder, 
+    dest_folder = dest_folder, 
+    min_width = min_width, 
+    min_height = min_height, 
+    allowed_types = allowed_types):
+    
+    print "Running on folder:", root_folder
     start = time.time()
-    set_dir()
+    set_dir(root_folder = root_folder)
     count = 0
+    total_count = 0
     error_count = 0
+    file_count=0
+    
+    #Count all images. 
+    print "Counting all files in directory..."
     for (dirname, dirs, files) in os.walk('.'):
         for filename in files:
+            file_count+=1
+
+    #Remember total count. 
+    total_count = file_count
+    update_frequency = total_count / 25
+
+    print "Sorting initiated:"
+    for (dirname, dirs, files) in os.walk('.'):
+        for filename in files:
+            
+            #Calculation for percent finished. 
+            file_count -= 1
+
+            if file_count%update_frequency == 0:
+                print (((total_count-file_count)*100)/total_count), "% finished"
+
             if is_allowed_filetype(filename):
                 tmp_path = os.path.join(dirname, filename)
-                img = Image.open(tmp_path)
-                exif = get_exif(img)
+                try: 
+                    img = Image.open(tmp_path)
+                    exif = get_exif(img)
 
-                if check_size(img) and check_duplicates(tmp_path):
-                    camera_type = check_camera_type(exif)
-                    try:
-                        move_image(tmp_path, camera_type, count, exif)
-                        count += 1
-                    except:
-                        print tmp_path, "raised error"
-                        handle_error(tmp_path, error_count)
-                        error_count += 1
+                    if check_size(img) and check_duplicates(tmp_path):
+                        camera_type = check_camera_type(exif)
+                        try:
+                            move_image(tmp_path, camera_type, count, exif)
+                            count += 1
+                        except:
+                            #print tmp_path, "raised error"
+                            handle_error(tmp_path, error_count)
+                            error_count += 1
+                except:
+                    x=1
     print count, "images were found and copied to the right directory"
     print error_count, "errors were raised and moved to the errors folder"
     print duplicates, "duplicates were found"
     print "Exuction time", time.time() - start
 
 
-main()
+run(root_folder = "/Users/Morten/Desktop/Test")
